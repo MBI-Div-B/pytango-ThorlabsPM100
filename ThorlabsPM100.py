@@ -3,7 +3,7 @@ from ThorlabsPM100 import ThorlabsPM100, USBTMC
 from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 from tango.server import Device, attribute, command, pipe, device_property
 
-class PM100(Device):
+class ThorlabsPM100(Device):
 
     wavelength = attribute(label="Wavelength (nm)", dtype=float,
                          display_level=DispLevel.OPERATOR,
@@ -35,6 +35,4 @@ class PM100(Device):
 
 
 if __name__ == "__main__":
-    PM100.run_server()
-
-
+    ThorlabsPM100.run_server()

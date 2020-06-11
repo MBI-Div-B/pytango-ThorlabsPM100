@@ -1,4 +1,5 @@
-# pytango-thorlabs_pm
+# pytango-ThorlabsPM100
 
 # Installation
-install Thorlabs pm100 package before use the Tango-ds: pip install ThorlabsPM100
+install Thorlabs PM100 package from PyPi.org
+`pip3 install ThorlabsPM100`
