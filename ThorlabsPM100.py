@@ -1,47 +1,61 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
-# Copyright (C) DATE  MBI-Division-B
-# MIT License, refer to LICENSE file
-# Author: / Email: (set year in DATE above please)
-
 from ThorlabsPM100 import ThorlabsPM100, USBTMC
 
-from tango import AttrWriteType, DispLevel, DevState
-from tango.server import Device, attribute
+from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
+from tango.server import Device, attribute, command, pipe, device_property
 
+class ThorlabsPM100Tango(Device):
 
-class ThorlabsPM100TDS(Device):
+    Port = device_property(
+        dtype="str",
+        default_value="/dev/usbtmc0",
+    )
 
-    wavelength = attribute(label="Wavelength (nm)",
-                           dtype=float,
-                           display_level=DispLevel.OPERATOR,
-                           access=AttrWriteType.READ_WRITE,
-                           doc="Correction wavelength")
+    wavelength = attribute(label="Wavelength (nm)", dtype=float,
+                         display_level=DispLevel.OPERATOR,
+                         access=AttrWriteType.READ_WRITE,
+                         doc="Correction wavelength")
 
-    power = attribute(label="Power (W)",
-                      dtype=float,
-                      display_level=DispLevel.OPERATOR,
-                      access=AttrWriteType.READ,
-                      doc="Measured power")
+    power = attribute(label="Power (W)", dtype=float,
+                         display_level=DispLevel.OPERATOR,
+                         access=AttrWriteType.READ,
+                         doc="Measured power")
+
+    conversion = attribute(label="Conversionfactor", dtype=float,
+                         display_level=DispLevel.OPERATOR,
+                         access=AttrWriteType.READ_WRITE,
+                         doc="Conversionfactor",
+                         memorized=True,
+                         hw_memorized=True,)
+
 
     def init_device(self):
         Device.init_device(self)
-        self.inst = USBTMC(device="/dev/usbtmc0")
+        self.inst = USBTMC(device=self.Port)
         self.power_meter = ThorlabsPM100(inst=self.inst)
+        self._conversion_factor = 1.0
         self.set_state(DevState.ON)
 
     def read_wavelength(self):
         return self.power_meter.sense.correction.wavelength
-
+    
     def write_wavelength(self, wav):
         self.wavelength = wav
         self.power_meter.sense.correction.wavelength = wav
+        
+    def read_conversion(self):
+        return self._conversion_factor
+    
+    def write_conversion(self, value):
+        self._conversion_factor = value
 
     def read_power(self):
-        return self.power_meter.read
+        self.debug_stream('read power')
+        power = self.power_meter.read
+        return power * self._conversion_factor
+    
+    def read_Test(self):
+        return self.Test
 
 
 if __name__ == "__main__":
-    ThorlabsPM100TDS.run_server()
+    ThorlabsPM100Tango.run_server()
