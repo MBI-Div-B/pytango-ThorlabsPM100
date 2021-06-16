@@ -1,11 +1,12 @@
 #!/usr/bin/python3 -u
 
-from ThorlabsPM100 import ThorlabsPM100, USBTMC
+from ThorlabsPM100 import ThorlabsPM100 as tlpm100
+from ThorlabsPM100 import USBTMC
 
 from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 from tango.server import Device, attribute, command, pipe, device_property
 
-class ThorlabsPM100Tango(Device):
+class ThorlabsPM100(Device):
 
     Port = device_property(
         dtype="str",
@@ -29,11 +30,11 @@ class ThorlabsPM100Tango(Device):
                            format="%6.3e",
                            display_level=DispLevel.OPERATOR,
                            access=AttrWriteType.READ_WRITE,
-                           doc="Conversionfactor",
+                           doc="Conversion factor",
                            memorized=True,
                            hw_memorized=True,)
 
-    auto_range = attribute(label="Auto Range",
+    auto_range = attribute(label="Auto range",
                            dtype="bool",
                            display_level=DispLevel.OPERATOR,
                            access=AttrWriteType.READ_WRITE,)
@@ -47,32 +48,32 @@ class ThorlabsPM100Tango(Device):
     def init_device(self):
         Device.init_device(self)
         self.inst = USBTMC(device=self.Port)
-        self.power_meter = ThorlabsPM100(inst=self.inst)
+        self.power_meter = tlpm100(inst=self.inst)
         self.__conversion_factor = 1.0
         self.set_state(DevState.ON)
 
     def read_wavelength(self):
         return self.power_meter.sense.correction.wavelength
-    
+
     def write_wavelength(self, value):
         self.wavelength = value
         self.power_meter.sense.correction.wavelength = value
 
     def read_auto_range(self):
         return bool(self.power_meter.sense.power.dc.range.auto)
-    
+
     def write_auto_range(self, value):
         self.power_meter.sense.power.dc.range.auto = int(value)
 
     def read_upper_range(self):
         return float(self.power_meter.sense.power.dc.range.upper)
-    
+
     def write_upper_range(self, value):
         self.power_meter.sense.power.dc.range.upper = value
 
     def read_conversion(self):
         return self.__conversion_factor
-    
+
     def write_conversion(self, value):
         self.__conversion_factor = value
 
@@ -82,4 +83,4 @@ class ThorlabsPM100Tango(Device):
         return float(power * self.__conversion_factor)
 
 if __name__ == "__main__":
-    ThorlabsPM100Tango.run_server()
+    ThorlabsPM100.run_server()
