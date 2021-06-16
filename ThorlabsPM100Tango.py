@@ -13,6 +13,12 @@ class ThorlabsPM100(Device):
         default_value="/dev/ttyTLPM100",
     )
 
+    sn = attribute(label="SN", dtype="str", access=AttrWriteType.READ,
+                      doc="Sensor serial number")
+
+    model = attribute(label="Model", dtype="str", access=AttrWriteType.READ,
+                      doc="Sensor model")
+
     wavelength = attribute(label="Wavelength", dtype="float",
                          display_level=DispLevel.OPERATOR,
                          access=AttrWriteType.READ_WRITE,
@@ -47,10 +53,28 @@ class ThorlabsPM100(Device):
 
     def init_device(self):
         Device.init_device(self)
-        self.inst = USBTMC(device=self.Port)
-        self.power_meter = tlpm100(inst=self.inst)
+        self.set_state(DevState.INIT)
+
+        try:
+            self.info_stream('Connecting on Port: {:s}'.format(self.Port))
+            self.inst = USBTMC(device=self.Port)
+            self.power_meter = tlpm100(inst=self.inst)
+            self.set_state(DevState.ON)
+            idn = self.power_meter.system.sensor.idn.split(',')
+            self.__model = idn[0]
+            self.__sn = idn[1]
+            self.info_stream('Connected to {:s} with SN: {:s}'.format(self.__model, self.__sn))
+        except:
+            self.info_stream('Not able to connect on Port: {:s}'.format(self.Port))
+            self.set_state(DevState.OFF)
+
         self.__conversion_factor = 1.0
-        self.set_state(DevState.ON)
+
+    def read_sn(self):
+        return self.__sn
+
+    def read_model(self):
+        return self.__model
 
     def read_wavelength(self):
         return self.power_meter.sense.correction.wavelength
